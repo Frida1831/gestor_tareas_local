@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../models/tarea.dart';
 
-// Pantalla base SIN persistencia ni operaciones CRUD implementadas.
-// Conserva las indicaciones TODO para orientar tu trabajo.
+import '../data/database.dart';
+
 class TareasPage extends StatefulWidget {
-  const TareasPage({super.key});
+  final AppDatabase? database;
+
+  const TareasPage({super.key, this.database});
 
   @override
   State<TareasPage> createState() => _TareasPageState();
@@ -13,39 +14,112 @@ class TareasPage extends StatefulWidget {
 class _TareasPageState extends State<TareasPage> {
   final TextEditingController _tituloController = TextEditingController();
 
-  final List<Tarea> _tareas = [];
+  // Instancia de la base de datos
+  late final AppDatabase _database;
+
+  // Lista de tareas obtenidas desde SQLite
+  List<TareaDB> _tareas = [];
+
+  bool _cargando = true;
+  bool _guardando = false;
 
   @override
   void initState() {
     super.initState();
 
+    _database = widget.database ?? AppDatabase();
+
+    _cargarTareas();
   }
 
-  void _agregarTarea() {
-    _pendiente('Implementar registro de tarea');
+  // Consultar las tareas almacenadas en SQLite
+  Future<void> _cargarTareas() async {
+    try {
+      final tareas = await _database.obtenerTareas();
+
+      if (!mounted) return;
+
+      setState(() {
+        _tareas = tareas;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _pendiente('Error al consultar las tareas: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _cargando = false;
+        });
+      }
+    }
   }
 
-  void _alternarCompletada(Tarea tarea, bool completada) {
+  // Agregar una tarea a SQLite
+  Future<void> _agregarTarea() async {
+    final titulo = _tituloController.text.trim();
+
+    if (titulo.isEmpty) {
+      _pendiente('Escribe el título de la tarea');
+      return;
+    }
+
+    setState(() {
+      _guardando = true;
+    });
+
+    try {
+      await _database.agregarTarea(titulo);
+
+      if (!mounted) return;
+
+      _tituloController.clear();
+
+      await _cargarTareas();
+
+      if (!mounted) return;
+
+      _pendiente('Tarea agregada correctamente');
+    } catch (e) {
+      if (!mounted) return;
+      _pendiente('Error al guardar la tarea: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _guardando = false;
+        });
+      }
+    }
+  }
+
+  // Pendiente para la etapa 3
+  void _alternarCompletada(TareaDB tarea, bool completada) {
     _pendiente('Implementar actualización de tarea');
   }
 
-  void _editarTarea(Tarea tarea) {
+  // Pendiente para la etapa 3
+  void _editarTarea(TareaDB tarea) {
     _pendiente('Implementar edición de título');
   }
 
-  void _eliminarTarea(Tarea tarea) {
+  // Pendiente para la etapa 3
+  void _eliminarTarea(TareaDB tarea) {
     _pendiente('Implementar eliminación de tarea');
   }
 
+  // Mostrar mensajes al usuario
   void _pendiente(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensaje)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
   @override
   void dispose() {
     _tituloController.dispose();
+
+    if (widget.database == null) {
+      _database.close();
+    }
+
     super.dispose();
   }
 
@@ -67,7 +141,7 @@ class _TareasPageState extends State<TareasPage> {
             ),
             const SizedBox(height: 8),
             FilledButton.icon(
-              onPressed: _agregarTarea,
+              onPressed: _guardando || _cargando ? null : _agregarTarea,
               icon: const Icon(Icons.add),
               label: const Text('Agregar tarea'),
             ),
@@ -75,12 +149,15 @@ class _TareasPageState extends State<TareasPage> {
             const Text('Mis tareas', style: TextStyle(fontSize: 18)),
             const SizedBox(height: 8),
             Expanded(
-              child: _tareas.isEmpty
+              child: _cargando
+                  ? const Center(child: CircularProgressIndicator())
+                  : _tareas.isEmpty
                   ? const Center(child: Text('Todavía no hay tareas guardadas'))
                   : ListView.builder(
                       itemCount: _tareas.length,
                       itemBuilder: (context, index) {
                         final tarea = _tareas[index];
+
                         return Card(
                           child: ListTile(
                             leading: Checkbox(

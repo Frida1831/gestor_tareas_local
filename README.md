@@ -82,3 +82,49 @@ Actualmente se cuenta con la interfaz inicial, las dependencias de persistencia 
 - https://drift.simonbinder.eu/platforms/web/
 - https://pub.dev/packages/drift_flutter
 - https://docs.flutter.dev/data-and-backend/persistence/sqlite
+
+## Etapa 2. Implementación de persistencia con SQLite
+
+Durante esta etapa se implementó la conexión de la aplicación Flutter con una base de datos local SQLite mediante Drift y drift_flutter.
+
+### Funcionalidades implementadas
+
+- Creación de la base de datos local.
+- Definición de la tabla de tareas.
+- Generación automática de código mediante build_runner.
+- Registro de nuevas tareas.
+- Consulta y visualización de las tareas almacenadas.
+- Validación de títulos vacíos.
+- Manejo de errores mediante mensajes en pantalla.
+- Liberación de recursos y cierre de la conexión.
+- Adaptación de la prueba inicial mediante una base de datos SQLite en memoria.
+
+### Funcionamiento de la persistencia
+
+Las tareas se almacenan directamente en SQLite. Al iniciar la aplicación, se consultan los registros existentes y se muestran en la interfaz gráfica, permitiendo conservar la información incluso después de cerrar completamente la aplicación.
+
+### Pruebas realizadas
+
+| Prueba | Resultado |
+|---|---|
+| Análisis estático con flutter analyze | Correcto |
+| Prueba automatizada con flutter test | Correcto |
+| Ejecución en Windows | Correcto |
+| Registro de tres tareas | Correcto |
+| Persistencia después de cerrar y abrir la aplicación | Correcto |
+| Validación de títulos vacíos | Correcto |
+
+### Dificultades encontradas
+
+Durante la primera ejecución en Windows, Flutter indicó que no se encontraban las herramientas de compilación de Visual Studio. Para solucionar este problema, se instaló Visual Studio con la carga de trabajo Desarrollo para el escritorio con C++, incluyendo las herramientas MSVC, CMake y el SDK de Windows.
+
+Después de realizar esta configuración, la aplicación se ejecutó correctamente.
+
+### Funcionalidades pendientes
+
+- Edición del título de una tarea.
+- Actualización del estado de una tarea.
+- Eliminación de tareas.
+- Configuración de SQLite para el entorno web.
+- Verificación del funcionamiento en dispositivos móviles.
+- Implementación de pruebas automatizadas adicionales.
