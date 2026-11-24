@@ -13,7 +13,7 @@ class Tareas extends Table {
   BoolColumn get completada => boolean().withDefault(const Constant(false))();
 }
 
-// Base de datos
+// Base de datos de la aplicación
 @DriftDatabase(tables: [Tareas])
 class AppDatabase extends _$AppDatabase {
   AppDatabase()
@@ -26,13 +26,14 @@ class AppDatabase extends _$AppDatabase {
           ),
         ),
       );
+
   // Constructor para pruebas automatizadas
   AppDatabase.prueba(super.executor);
 
   @override
   int get schemaVersion => 1;
 
-  // Agregar una tarea
+  // Agregar una nueva tarea
   Future<int> agregarTarea(String titulo) async {
     return await into(tareas).insert(TareasCompanion.insert(titulo: titulo));
   }
@@ -40,5 +41,24 @@ class AppDatabase extends _$AppDatabase {
   // Consultar todas las tareas
   Future<List<TareaDB>> obtenerTareas() async {
     return await select(tareas).get();
+  }
+
+  // Actualizar el título de una tarea
+  Future<int> editarTarea(int id, String titulo) async {
+    return await (update(tareas)..where((tarea) => tarea.id.equals(id))).write(
+      TareasCompanion(titulo: Value(titulo)),
+    );
+  }
+
+  // Cambiar el estado de una tarea
+  Future<int> actualizarEstado(int id, bool completada) async {
+    return await (update(tareas)..where((tarea) => tarea.id.equals(id))).write(
+      TareasCompanion(completada: Value(completada)),
+    );
+  }
+
+  // Eliminar una tarea por su identificador
+  Future<int> eliminarTarea(int id) async {
+    return await (delete(tareas)..where((tarea) => tarea.id.equals(id))).go();
   }
 }

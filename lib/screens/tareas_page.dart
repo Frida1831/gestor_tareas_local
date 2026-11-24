@@ -91,19 +91,141 @@ class _TareasPageState extends State<TareasPage> {
     }
   }
 
-  // Pendiente para la etapa 3
-  void _alternarCompletada(TareaDB tarea, bool completada) {
-    _pendiente('Implementar actualización de tarea');
+  // Cambiar el estado de una tarea
+  Future<void> _alternarCompletada(TareaDB tarea, bool completada) async {
+    try {
+      await _database.actualizarEstado(tarea.id, completada);
+
+      if (!mounted) return;
+
+      await _cargarTareas();
+
+      if (!mounted) return;
+
+      if (completada) {
+        _pendiente('Tarea marcada como completada');
+      } else {
+        _pendiente('Tarea marcada como pendiente');
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      _pendiente('Error al actualizar el estado: $e');
+    }
   }
 
-  // Pendiente para la etapa 3
-  void _editarTarea(TareaDB tarea) {
-    _pendiente('Implementar edición de título');
+  // Editar el título de una tarea
+  Future<void> _editarTarea(TareaDB tarea) async {
+    final controller = TextEditingController(text: tarea.titulo);
+
+    final nuevoTitulo = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Editar tarea'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Título de la tarea',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context, controller.text.trim());
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Esperar a que termine de cerrarse el diálogo
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.dispose();
+    });
+
+    if (!mounted || nuevoTitulo == null) return;
+
+    if (nuevoTitulo.isEmpty) {
+      _pendiente('El título no puede estar vacío');
+      return;
+    }
+
+    try {
+      await _database.editarTarea(tarea.id, nuevoTitulo);
+
+      if (!mounted) return;
+
+      await _cargarTareas();
+
+      if (!mounted) return;
+
+      _pendiente('Tarea actualizada correctamente');
+    } catch (e) {
+      if (!mounted) return;
+
+      _pendiente('Error al editar la tarea: $e');
+    }
   }
 
-  // Pendiente para la etapa 3
-  void _eliminarTarea(TareaDB tarea) {
-    _pendiente('Implementar eliminación de tarea');
+  // Eliminar una tarea
+  Future<void> _eliminarTarea(TareaDB tarea) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Eliminar tarea'),
+          content: Text(
+            '¿Estás seguro de eliminar la tarea "${tarea.titulo}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || confirmar != true) return;
+
+    try {
+      await _database.eliminarTarea(tarea.id);
+
+      if (!mounted) return;
+
+      await _cargarTareas();
+
+      if (!mounted) return;
+
+      _pendiente('Tarea eliminada correctamente');
+    } catch (e) {
+      if (!mounted) return;
+
+      _pendiente('Error al eliminar la tarea: $e');
+    }
   }
 
   // Mostrar mensajes al usuario
@@ -168,8 +290,19 @@ class _TareasPageState extends State<TareasPage> {
                                 }
                               },
                             ),
-                            title: Text(tarea.titulo),
-                            subtitle: Text('ID: ${tarea.id}'),
+                            title: Text(
+                              tarea.titulo,
+                              style: TextStyle(
+                                decoration: tarea.completada
+                                    ? TextDecoration.lineThrough
+                                    : TextDecoration.none,
+                                color: tarea.completada ? Colors.grey : null,
+                              ),
+                            ),
+                            subtitle: Text(
+                              'ID: ${tarea.id} - '
+                              '${tarea.completada ? "Completada" : "Pendiente"}',
+                            ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
