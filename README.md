@@ -1,4 +1,3 @@
-
 # Gestor de tareas SQLite multiplataforma
 
 ## Datos generales
@@ -98,29 +97,57 @@ flutter run -d windows
 
 Para ejecutar la aplicación en Windows es necesario contar con Visual Studio y la carga de trabajo Desarrollo para el escritorio con C++, incluyendo las herramientas MSVC, CMake y el SDK de Windows.
 
-La configuración y las instrucciones de ejecución para los entornos web y móvil se incorporarán durante la cuarta etapa del proyecto.
+### Ejecutar la aplicación en el entorno web
+
+Los archivos `sqlite3.wasm` y `drift_worker.js` deben estar en la carpeta `web`.
+
+```bash
+flutter run -d web-server --web-hostname=localhost --web-port=8080
+```
+
+Abrir Google Chrome e ingresar a http://localhost:8080.
+
+Para conservar los datos entre ejecuciones se debe utilizar el mismo navegador, perfil, dirección y puerto.
+
+### Ejecutar la aplicación en Android
+
+Es necesario contar con el SDK de Android y un dispositivo físico o emulador. En un dispositivo físico, activar las opciones de desarrollador y la depuración USB.
+
+Consultar los dispositivos disponibles:
+
+```bash
+flutter devices
+```
+
+Ejecutar la aplicación:
+
+```bash
+flutter run -d ID_DEL_DISPOSITIVO
+```
+
+Reemplazar `ID_DEL_DISPOSITIVO` por el identificador correspondiente al dispositivo Android.
 
 ## Estado del proyecto
 
 Actualmente, la aplicación cuenta con una base de datos SQLite funcional, las operaciones CRUD completas, validación de datos, manejo de errores y seis pruebas automatizadas aprobadas.
 
-Se ha comprobado el funcionamiento y la persistencia de los datos en Windows.
+Se ha comprobado el funcionamiento y la persistencia de los datos en Windows, Android y Google Chrome.
 
 | Etapa | Descripción | Estado |
 |---|---|---|
 | 1 | Preparación del proyecto y diseño de la base de datos | Completada |
 | 2 | Implementación de persistencia con SQLite | Completada |
 | 3 | Implementación del CRUD y pruebas automatizadas | Completada |
-| 4 | Funcionamiento multiplataforma | En desarrollo |
-| 5 | Documentación y entrega final | Pendiente |
+| 4 | Funcionamiento multiplataforma | Completada |
+| 5 | Documentación y entrega final | En desarrollo |
 
 ### Estado por plataforma
 
 | Entorno | Plataforma | Estado |
 |---|---|---|
 | Escritorio | Windows | Verificado |
-| Móvil | Android | Pendiente de verificar |
-| Web | Google Chrome | Pendiente de configurar y verificar |
+| Móvil | Android 15 | Verificado |
+| Web | Google Chrome | Verificado |
 
 ## Etapa 1. Preparación del proyecto y diseño de la base de datos
 
@@ -236,7 +263,7 @@ Durante esta etapa se implementaron las operaciones restantes para la administra
 
 Se implementaron validaciones para impedir el registro y la edición de tareas con títulos vacíos o compuestos únicamente por espacios.
 
-Las operaciones de la base de datos utilizan bloques try-catch para controlar posibles errores durante el registro, consulta, edición, actualización y eliminación de tareas.
+Las operaciones de la base de datos se invocan desde la interfaz mediante bloques try-catch para controlar posibles errores durante el registro, consulta, edición, actualización y eliminación de tareas.
 
 Los mensajes de confirmación y error se muestran mediante SnackBar, proporcionando información al usuario sobre el resultado de las operaciones.
 
@@ -290,6 +317,100 @@ Las pruebas automatizadas comprueban el funcionamiento de las operaciones CRUD u
 - Verificación del funcionamiento y persistencia en el entorno web.
 - Verificación del funcionamiento y persistencia en dispositivos móviles Android.
 - Elaboración de la documentación final del proyecto.
+
+## Etapa 4. Funcionamiento multiplataforma
+
+Durante esta etapa se configuró y verificó el funcionamiento de la aplicación en los entornos de escritorio, web y móvil, utilizando el mismo código fuente desarrollado con Flutter, SQLite y Drift.
+
+### Versiones de las dependencias
+
+| Dependencia | Versión |
+|---|---|
+| drift | 2.35.4 |
+| drift_dev | 2.35.3 |
+| drift_flutter | 0.3.1 |
+| sqlite3 | 3.5.2 |
+
+### Configuración del entorno web
+
+Para permitir el funcionamiento de SQLite en Google Chrome se incorporaron los archivos sqlite3.wasm y drift_worker.js dentro de la carpeta web del proyecto.
+
+También se actualizó la configuración de la conexión en el archivo lib/data/database.dart mediante DriftWebOptions.
+
+Se utilizó un servidor web local con el puerto fijo 8080 para mantener el mismo origen durante las pruebas de persistencia.
+
+### Pruebas realizadas en Google Chrome
+
+| Prueba | Resultado |
+|---|---|
+| Ejecución de la aplicación | Correcto |
+| Registro y consulta de tareas | Correcto |
+| Edición de tareas | Correcto |
+| Actualización del estado | Correcto |
+| Eliminación de tareas | Correcto |
+| Validación de títulos vacíos | Correcto |
+| Persistencia después de recargar la página | Correcto |
+| Persistencia después de cerrar y abrir el navegador | Correcto |
+| Persistencia después de reiniciar el servidor local | Correcto |
+
+### Configuración del entorno móvil
+
+Para verificar el funcionamiento en dispositivos móviles se utilizó un teléfono físico con las siguientes características:
+
+- Modelo: NIC LX3.
+- Sistema operativo: Android 15.
+- Nivel de API: 35.
+- Arquitectura: ARM64.
+
+Se activaron las opciones de desarrollador y la depuración USB del dispositivo.
+
+Posteriormente, se conectó el teléfono a la computadora mediante un cable USB y se verificó su reconocimiento mediante el comando flutter devices.
+
+La aplicación se compiló e instaló directamente en el dispositivo mediante Flutter, sin necesidad de utilizar un emulador.
+
+### Pruebas realizadas en Android
+
+| Prueba | Resultado |
+|---|---|
+| Detección del dispositivo físico | Correcto |
+| Compilación e instalación | Correcto |
+| Registro y consulta de tareas | Correcto |
+| Edición de tareas | Correcto |
+| Actualización del estado | Correcto |
+| Eliminación de tareas | Correcto |
+| Validación de títulos vacíos | Correcto |
+| Persistencia después de cerrar y abrir la aplicación | Correcto |
+| Funcionamiento sin conexión USB a la computadora | Correcto |
+
+### Comparación de la persistencia entre plataformas
+
+| Plataforma | Almacenamiento | Persistencia |
+|---|---|---|
+| Windows | Base de datos SQLite local | Verificada |
+| Android | Base de datos SQLite en el almacenamiento de la aplicación | Verificada |
+| Web | SQLite mediante WebAssembly y almacenamiento del navegador | Verificada |
+
+Cada plataforma administra sus propios datos de manera independiente. Las tareas registradas en un entorno no se sincronizan automáticamente con los demás, debido a que la aplicación utiliza almacenamiento local y no depende de un servidor externo.
+
+### Consideraciones del almacenamiento web
+
+La persistencia en el navegador depende del origen de la aplicación y del perfil utilizado.
+
+Cambiar el puerto, utilizar otro navegador, eliminar los datos del sitio o utilizar una sesión de navegación privada puede impedir el acceso a los registros previamente almacenados.
+
+### Resultados de la etapa
+
+Se comprobó que la aplicación permite realizar las operaciones CRUD y conservar la información después de cerrar y volver a abrir la aplicación en los tres entornos establecidos.
+
+Se reutilizó el mismo código fuente para las diferentes plataformas, sin necesidad de desarrollar aplicaciones independientes.
+
+### Actividades pendientes al finalizar la etapa
+
+- Elaboración del reporte final en PDF.
+- Documentación de la investigación realizada.
+- Selección de evidencias.
+- Revisión final del repositorio.
+- Entrega del proyecto.
 
 ## Referencias
 
